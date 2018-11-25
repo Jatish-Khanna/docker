@@ -1,0 +1,59 @@
+# Content from https://www.katacoda.com/courses/docker/15
+
+#Docker Labels -
+#  it can be useful to add additional metadata relating to the container to help their management. 
+#  This metadata could be related to which version of the code is running, 
+#  which applications or users own the container or define special criteria such as which servers they should run on.
+
+#GuideLines
+# 1, all tools should prefix their keys with the reverse DNS notation of a domain controlled by the author. For example, com.katacoda.some-label.
+
+# 2, if you're creating labels for CLI use, then they should follow the DNS notation making it easier for users to type.
+
+# 3, keys should only consist of lower-cased alphanumeric characters, dots and dashes (for example, [a-z0-9-.])
+
+docker run -l containerId=R1PR  -d redis
+
+# Multiple labels from file
+echo containerId=R1PR >> labels 
+echo "environment=PR" >> labels
+
+# Load label from file, each label should be on single line
+docker run --label-file labels -d redis
+
+#==================================================================
+#Labels in Docker file
+FROM openjdk
+LABEL environment=PR
+...
+
+OR
+Multiple labesl
+LABEL environment=PR \
+com.app.version=1.0 \
+com.app.build-date=2018-11-25T1:12:19Z \
+com.app.patch=27
+
+#==================================================================
+#View labels - When querying both the label key name and value are case sensitive. 
+docker inspect
+# Get Container labels
+docker inspect -f "{{json .Config.Labels }}" rd
+# Get image labels
+docker inspect -f "{{json .ContainerConfig.Labels }}" rd 
+
+# Filter containers based on labels
+docker ps --filter "label=user=scrapbook"
+
+# Filter images based on labels
+docker images --filter "label=vendor=Katacoda"
+
+#==================================================================
+# Starting docker deamon with labels
+docker -d \
+  -H unix:///var/run/docker.sock \
+  --label com.katacoda.environment="production" \
+  --label com.katacoda.storage="ssd"
+
+
+
