@@ -1,0 +1,29 @@
+# Run an application throws error and exists with non-zero status
+
+$ docker run -d --name crash-app scrapbook/docker-restart-example
+#30a7039f656b48abf499ce8a5511402b6852ff8c97fb397febf566e6dbe2a96f
+$ docker ps -a
+#CONTAINER ID        IMAGE                              COMMAND                  CREATED             STATUS                    PORTS               NAMES
+#30a7039f656b        scrapbook/docker-restart-example   "/bin/sh -c ./launch…"   10 seconds ago      Exited(1) 8 seconds ago                       crash-app
+$ docker logs crash-app
+
+
+# Create a new container with option --restart on-failure:[COUNT] number of times to restart
+
+$ docker run -d --name restart-container --restart on-failure:3 scrapbook/docker-restart-example
+#140a3c90e168e34479d5b6ff9333900bd7cfbc6480ba134c4fdef044ed83fc37
+
+OR
+# Always restarting container
+docker run -d --name restart-container --restart always scrapbook/docker-restart-example
+
+$ docker logs restart-container
+#Sun Nov 25 08:04:25 UTC 2018 Booting up...
+#Sun Nov 25 08:04:27 UTC 2018 Booting up...
+#Sun Nov 25 08:04:28 UTC 2018 Booting up...
+#Sun Nov 25 08:04:30 UTC 2018 Booting up...
+#Sun Nov 25 08:04:32 UTC 2018 Booting up...
+$ docker ps -a
+#CONTAINER ID        IMAGE                              COMMAND                  CREATED             STATUS                                 PORTS               NAMES
+#140a3c90e168        scrapbook/docker-restart-example   "/bin/sh -c ./launch…"   16 seconds ago      Restarting (1) Less than a second ago                       restart-container
+
