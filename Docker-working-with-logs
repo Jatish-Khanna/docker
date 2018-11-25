@@ -1,0 +1,15 @@
+
+#Start redis
+docker run -d --name redis redis
+#view logs 
+docker logs redis
+
+#Update log location
+docker run -d --name redis-syslog --log-driver=syslog redis
+
+#Update log to no logging
+docker run -d --name redis-no-log --log-driver=none redis
+
+#inspect command allows you to identify the logging configuration for a particular container. 
+#The command below will output the LogConfig section for each of the containers.
+docker inspect --format '{{ .HostConfig.LogConfig }}' redis-server
