@@ -1,0 +1,37 @@
+#Docker Volumes are created and assigned when containers are started. Data Volumes allow you to map a host directory to a container for sharing data.
+
+#it allows-
+#  Data stored on host to be accessed from container
+#  Data save on container to be persisted on host
+
+#Directory data will be persisted on the host
+mkdir -p /host/data/redis
+
+# Start redis
+#  - run redis
+#  - Volume on server as /host/data/redis
+#  - mapped to conatiner volumen /data
+#  - start name/alias redis-with-data-volume
+#  - detached mode
+#  - start redis-server with appendonly option as yes
+docker run -v /host/data/redis:/data --name redis-with-data-volume -d redis redis-server --appendonly yes
+
+# Push data to redis-server stored in file
+echo  "SET Key0 Value0" >> data
+cat data | docker exec -i redis-with-data-volume redis-cli --pipe
+#All data transferred. Waiting for the last reply...
+#Last reply received from server.
+#errors: 0, replies: 1
+
+# execute the command on running container 
+docker exec -i redis-with-data-volume redis-cli get Key0
+
+# Same data volume can be mounted to other container
+docker run -v /host/data/redis/:/backup ubuntu ls /backup
+# Mounting it as read-only file system
+docker run -v /host/data/redis/:/data:ro -it ubuntu rm -rf /data
+
+# To access data volume from other container need to know exact path
+# Alternative to hardcoded path is
+#           -volumes-from
+docker run --volumes-from redis-with-data-volume -it ubuntu ls /data
