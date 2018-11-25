@@ -42,3 +42,69 @@ curl docker
 #The command below will launch an instance of the Redis-cli tool and connect to the redis server via its alias.
 
 docker run -it --link redis:redis2 redis redis-cli -h redis2
+
+#===================================================
+#Netowrking between the containers
+$ docker network create container-nw
+#dcf015f6bd9967ec58b93369fc79f80a609a1d0be82abed4ffc12ae71324d98b
+$ docker network ls
+#NETWORK ID          NAME                DRIVER              SCOPE
+#09df0c9f7616        bridge              bridge              local
+#dcf015f6bd99        container-nw        bridge              local
+#0c288d2ed25a        host                host                local
+#4d3221fe852b        none                null                local
+
+
+#launch new containers, using --net attribute to assign which network to launched container
+docker run -d --name redis --net container-nw redis
+
+#Docker no longer updates the environment and hosts configuration
+$ docker run --net container-nw alpine env
+#PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#HOSTNAME=070bb589de55
+#HOME=/root
+$ docker run --net container-nw alpine cat /etc/hosts
+#127.0.0.1       localhost
+#::1     localhost ip6-localhost ip6-loopback
+#fe00::0 ip6-localnet
+#ff00::0 ip6-mcastprefix
+#ff02::1 ip6-allnodes
+#ff02::2 ip6-allrouters
+#172.19.0.3      9fa462e77f46
+
+#Docker start using embedded DNS server configured in /etc/resolv.conf
+$ docker run --net container-nw alpine cat /etc/resolv.conf
+#The DNS has been resolved by DNS server embedded in container
+docker run --net container-nw alpine ping -c1 redis
+
+#create new network
+docker network create new-nw
+#Attach container to new created network
+docker network connect new-nw redis
+
+#run application with the different network
+docker run -d -p 80:3000 --net new-nw katacoda/redis-node-docker-example
+
+docker network ls
+#NETWORK ID          NAME                DRIVER              SCOPE
+#7b5b089f4160        bridge              bridge              local
+#711838ce458e        container-nw        bridge              local
+#0c288d2ed25a        host                host                local
+#e43bbc2cbe86        new-nw              bridge              local
+#4d3221fe852b        none                null                local
+$ docker container ls
+#CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS               NAMES
+#fd7a3b23f872        redis               "docker-entrypoint.s…"   4 minutes ago       Up 4 minutes        6379/tcp            redis-container
+
+#Connect Container with Alias
+#The following command will connect our Redis instance to the frontend-network with the alias of db.
+#docker network disconnect app-nw redis
+docker network create app-nw
+docker network connect --alias database-nw app-nw redis
+#
+#When containers attempt to access a service via the name db, they will be given the IP address of our Redis container.
+#
+docker run --net app-nw alpine ping -c1 database-nw
+
+
+
