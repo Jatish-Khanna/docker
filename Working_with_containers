@@ -1,3 +1,5 @@
+https://www.katacoda.com/courses/docker/5
+
 #create container
 docker create -v /var --name dataContainer busybox
 #copy files to container
@@ -10,3 +12,33 @@ docker export dataContainer > dataContainer.tar
 
 #The command will import the Data Container back into Docker.
 docker import dataContainer.tar 
+
+#working with containers
+#start redis server as redisdocker run -d --name redis redis
+
+#create an alpinen container and link it to redis
+docker run --link redis:redis alpine env
+#Bring the alpine container to use env functionalitydocker run --link redis:redis alpine env
+
+#Secondly, Docker will update the HOSTS file of the container with an entry for our source container with three names, the original, the alias and the hash-id. You can output the containers host entry using cat /etc/hosts
+#
+docker run --link redis:redis alpine cat /etc/hosts
+#
+#Example
+#With a link created you can ping the source container in the same way as if it were a server running in your network.
+#
+docker run --link redis:redis alpine ping -c 1 redis
+docker run --link redis:redis1 alpine ping -c 1 redis1
+
+#Here is a simple node.js application which connects to redis using the hostname redis.
+#
+docker run -d -p 80:3000 --link redis:redis katacoda/redis-node-docker-example
+#
+#Test Connection
+#Sending an HTTP request to the application will store the request in Redis and return a count. If you issue multiple requests, you'll see the counter increment as items are persisted.
+#
+curl docker
+
+#The command below will launch an instance of the Redis-cli tool and connect to the redis server via its alias.
+
+docker run -it --link redis:redis2 redis redis-cli -h redis2
