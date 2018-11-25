@@ -1,0 +1,12 @@
+#create container
+docker create -v /var --name dataContainer busybox
+#copy files to container
+docker cp config.conf dataContainer:/config/
+#list the contents of container
+docker run --volumes-from dataContainer ubuntu ls /config
+
+#Export container
+docker export dataContainer > dataContainer.tar
+
+#The command will import the Data Container back into Docker.
+docker import dataContainer.tar 
