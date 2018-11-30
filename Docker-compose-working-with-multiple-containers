@@ -1,0 +1,91 @@
+
+# Working with multiple containers to manage depenedencies properly
+# Docker-compose helps in 
+# Orchestration of new containers
+
+
+#define "docker-componse.yml" file.
+# File defines the container and settings required to launch complete clusture
+
+1)
+# Format
+container_name:
+  property: value
+  property2:
+     - "value2"
+    - or options
+    
+2) A container can link or refer another container
+# This is your Editor pane. Write the docker-compose.yml file here and 
+# use the command line to execute commands
+
+web:
+    build: .
+    links: redis           // Incorrect (see below)
+    ports: 3000 8000 3001  // Incorrect (see below)
+    
+redis:
+    image: redis:alpine
+    volumes: /data/redis_server/store:/data   // Incorrect (see below)
+    
+    
+ 3) Arrays should be defined with "-" symbol
+ # This is your Editor pane. Write the docker-compose.yml file here and 
+# use the command line to execute commands
+
+web:
+    build: .
+    links: 
+        - redis
+    ports: 
+        - 3000
+        - 8000
+        - 3001
+    
+redis:
+    image: redis:alpine
+    volumes: 
+        - /data/redis_server/store:/data
+        
+
+docker-compose up -d
+========================
+$ docker-compose ps
+      Name                    Command               State                                     Ports
+-------------------------------------------------------------------------------------------------------------------------------------
+tutorial_redis_1   docker-entrypoint.sh redis ...   Up      6379/tcp
+tutorial_web_1     npm start                        Up      0.0.0.0:32770->3000/tcp, 0.0.0.0:32769->3001/tcp, 0.0.0.0:32768->8000/tcp
+  
+  
+  
+  4) Docker autoscaling feature
+  
+  # if number is greater than already running instances - Docker will scaleup instances
+  # if number is smaller than already running instances - Docker will scaledown instances
+  
+  docker-compose scale # << Number of instances to be scaled to
+
+
+=================
+$ docker-compose scale web=2
+WARNING: The scale command is deprecated. Use the up command with the --scale flag instead.
+Starting tutorial_web_1 ... done
+Creating tutorial_web_2 ... done
+$ docker-compose scale web=4
+WARNING: The scale command is deprecated. Use the up command with the --scale flag instead.
+Starting tutorial_web_1 ... done
+Starting tutorial_web_2 ... done
+Creating tutorial_web_3 ... done
+Creating tutorial_web_4 ... done
+$ docker-compose scale web=
+WARNING: The scale command is deprecated. Use the up command with the --scale flag instead.
+ERROR: Number of containers for service "web" is not a number
+$ docker-compose scale web=2
+WARNING: The scale command is deprecated. Use the up command with the --scale flag instead.
+Stopping and removing tutorial_web_3 ... done
+Stopping and removing tutorial_web_4 ... done
+
+# Stop only docker web containers
+$docker-compose stop web
+#stop all the containers defined
+$docker-compose stop
