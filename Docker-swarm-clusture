@@ -1,0 +1,120 @@
+# initialise a Docker Swarm Mode cluster and deploy networked containers using the built-in Docker Orchestration.
+
+# In 1.12, Docker introduced Swarm Mode. 
+# Swarm Mode enables the ability to deploy containers across multiple Docker hosts, 
+# using overlay networks for service discovery with a built-in load balancer for scaling the services.
+
+# Swarm Mode is managed as part of the Docker CLI, making it a seamless experience to the Docker ecosystem.
+
+# Key Concepts
+# Docker Swarm Mode introduces three new concepts which we'll explore in this scenario.
+
+Node: A Node is an instance of the Docker Engine connected to the Swarm. Nodes are either managers or workers. Managers schedules which containers to run where. Workers execute the tasks. By default, Managers are also workers.
+
+Services: A service is a high-level concept relating to a collection of tasks to be executed by workers. An example of a service is an HTTP Server running as a Docker Container on three nodes.
+
+Load Balancing: Docker includes a load balancer to process requests across all containers in the service.
+
+# Initialise Swarm Mode
+Turn single host Docker host into a Multi-host Docker Swarm Mode. Becomes Manager By default, Docker works as an isolated single-node. All containers are only deployed onto the engine. Swarm Mode turns it into a multi-host cluster-aware engine.
+
+1)  First node that initialise the Swarm Mode becomes the manager. As new nodes join the cluster, they can adjust their roles between managers or workers. You should run 3-5 managers in a production environment to ensure high availability.
+
+
+
+# Create docker swarm
+docker swarm init
+
+After running the command, the Docker Engine knows how to work with a cluster and becomes the manager. The results of an initialisation is a token used to add additional nodes in a secure fashion. Keep this token safe and secure for future use when scaling your cluster.
+
+Docker now uses an additional port, 2377, for managing the Swarm. The port should be blocked from public access and only accessed by trusted users and nodes. We recommend using VPNs or private networks to secure access.
+
+#Benefits -
+ - It is possible to add additional nodes and issues command across swarm
+ - If node has been disappreaded or crashed in the swarm, the running containers on crashed node will be automatically rescheduled on other node
+ - ensure high-availablity 
+ 
+ 
+ 
+ 2) Join new node as worker or manager
+ 
+ docker swarm join --token <TOKEN> host:port
+ 
+ 
+ 
+ 3) Find the tocken of current node
+ ## Token for manager
+ docker -H 172.17.0.57:2345 swarm  join-token manager
+ ## Token for worker
+ docker -H 172.17.0.57:2345 swarm  join-token worker
+ 
+ 4) All nodes present in clusture
+ docker node ls
+ 
+ 
+ 
+ 5) Create Overlay network
+ - Swarm mode has imporved networking model
+ - Docker required the use of an external key-value store, such as Consul, to ensure consistency across the network. The need for consensus and K/V has now been incorporated internally into Docker and no longer depends on external services.
+ 
+# The overlay network is used to enable containers on different hosts to communicate. Under the covers, this is a Virtual Extensible LAN (VXLAN), designed for large scale cloud based deployments.
+ 
+ 
+ The following command will create a new overlay network called skynet. All containers registered to this network can communicate with each other, regardless of which node they are deployed onto.
+
+docker network create -d overlay skynet
+
+
+
+6) Distribution of containers over network
+- Docker uses a spead replication model to identify the host on which container will be running.
+- This ensures even distribution of containers
+- It will reschedule all the running workloads on different host running under same network
+- replication and availability, we are running two instances, of replicas, of the container across our cluster.
+- we load balance these two containers together on port 80
+ 
+ docker service create --name http --network skynet --replicas 2 -p 80:80 katacoda/docker-http-server
+ # List the details of running services
+ docker service ls
+ 
+ 
+ 7) Scale docker container 
+ docker service scale http=7
+ 
+ 8) Monitor service
+ docker service ps http
+ docker service ps --pretty http
+ docker node ps self
+ docker node ps $(docker node ls -1 | head -n1)
+ 
+ 
+ 
+ 
+ 
+ Example 
+ docker swarm init
+ token=$(docker -H 172.17.0.33:2345 swarm join-token -q worker) && echo $token
+ docker swarm join <IP:PORT> --token $token
+ docker network create -d overlay app1-network
+ docker service create --name <SERVICE> --network <NETWORK> redis
+ 
+ 
+ 8) Load balance traffic in Swarm mode
+  - This is used to load balance traffic to different containers. These containers are grouped logically by friendly name and port
+  - Load distribution has been done using logical name/port mapping
+  - Any request accepted on public port will be distributed
+  - The service is give a VirtualIP that is routable inside docker n/w
+  - The virtual Ip is registered as Embedded DNS server, to look up underlying host
+  
+  - Run docker container with name "dig" and network "eg1" - image benhall/dig
+  - Execute command "dig http"
+  docker run --name dig --network eg1 benhall/dig dig http
+  
+  
+  docker run --name ping --network eg1 alpine ping -c5 http
+  
+  docker service create --name app1-web --network app1-network --replicas 4 -p 80:3000 katacoda/redis-node-docker-example
+  
+  
+ 
+ 
