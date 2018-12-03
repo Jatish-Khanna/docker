@@ -1,0 +1,74 @@
+# The Multi-stage feature of Docker allows to different stages to build docker image after multiple stages
+
+# Example 
+1) to buil the binary and artifact using a development container
+2) Packge the binaries skipping development tools and unnecessary files
+
+Download the git image -
+==============================
+git clone https://github.com/katacoda/golang-http-server.git
+
+# First Stage
+FROM golang:1.6-alpine
+
+RUN mkdir /app
+ADD . /app/
+WORKDIR /app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Second Stage
+FROM alpine
+EXPOSE 80
+CMD ["/app"]
+
+# Copy from first stage
+COPY --from=0 /app/main /app
+==================================
+
+Docker with single phase
+================
+#Single stage
+#build using -
+# docker build -t java-app .
+#docker run java-app
+FROM openjdk
+
+RUN mkdir -p /build
+COPY /docker /build
+WORKDIR /build
+
+
+RUN javac Solution.java
+CMD java Solution
+
+===========
+
+Docker with Multiple phases
+=============
+
+# This is your Editor pane. Write the Dockerfile here and 
+# use the command line to execute commands
+#Single stage
+# Only and create jar build using -
+# docker build -t java-app .
+#docker run java-app
+
+FROM openjdk AS buildjar
+
+RUN mkdir -p /build
+COPY /docker /build
+WORKDIR /build
+RUN javac Solution.java
+RUN cp -r /usr/lib/jvm/java-11-openjdk-amd64 /build/jdk
+
+from alpine AS packagejar
+
+#COPY --from=buildjar /docker-java-home /
+COPY --from=buildjar /build /build
+COPY --from=buildjar /build/Solution.class /
+#RUN cp /build/jdk/bin/* /bin
+
+#ENV PATH=$PATH:/build/jdk/bin
+#WORKDIR /
+#CMD exec java Solution
+CMD ls /
